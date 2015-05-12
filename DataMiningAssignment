@@ -1,13 +1,233 @@
-import string
 import time
 import random
+import string
 from math import floor
 from collections import defaultdict
 from sys import argv
 script, input_file = argv  
 
-def edit1(s1,s2):
-       
+def main():
+
+    StartingTime = time.time()
+	
+	# Opens the file and reads it line by line 
+    
+    File = open(input_file, "r")
+           
+    Sentence_List = []
+    s = File.readline()
+    
+	# Finds the word list and store sentence words
+	
+    while not (s == ""):
+        s_words = (s[:-1]).split()
+        if len(s_words) >= 10:
+            Sentence_List.append(s_words)
+        s = File.readline()
+
+    NumberOfSentences = len(Sentence_List)
+  
+    File.close()   
+   
+    TimeTaken = time.time() - StartingTime
+    TimeTakenInMins = floor(TimeTaken/60)
+    TimeTakenInSecs = round(TimeTaken - 60 * TimeTakenInMins,2)
+    print "Building the Word List "
+    print "Time Taken by the File: " + str(TimeTakenInMins) + " minutes, " + str(TimeTakenInSecs) + " seconds"
+    StartingTime = time.time()
+      
+    Sentence_List.sort(key=lambda s: s[1:]) # Remove duplicates,writes output files and sort the lines 
+                                     
+    
+    nodupes = open("F:\\DM\\1MBisentnodupes.txt", "w")
+    dupelist = open("F:\\DM\\1MBisentdupelist.txt", "w")
+    
+    k = 0
+    dup_matches = 0
+    dup_count = 1
+    tmp_list = []
+    for k in xrange(NumberOfSentences):
+        if k == NumberOfSentences - 1 or Sentence_List[k][1:] != Sentence_List[k+1][1:]:
+            # output unique sentences, with the number of duplicates of
+            # that sentence appended to the end
+            nodupes.write(" ".join(Sentence_List[k]) + " " + str(dup_count) + "\n")
+            if dup_count > 1:
+                # count matches due to duplicates
+                dup_matches += (dup_count * (dup_count - 1))/2
+                # write duplicates to file in case they're needed later
+                dupelist.write(Sentence_List[k][0] + " " + " ".join(tmp_list) + "\n")
+                dup_count = 1
+                tmp_list = []
+        else:
+            dup_count += 1
+            tmp_list.append(Sentence_List[k][0])
+    
+    print 
+    
+    nodupes.close()
+    dupelist.close()
+    
+    del Sentence_List
+    
+    print "Total matches due to duplicates: " + str(dup_matches)
+    
+#########
+    
+    TimeTaken = time.time() - StartingTime
+    TimeTakenInMins = floor(TimeTaken/60)
+    TimeTakenInSecs = round(TimeTaken - 60 * TimeTakenInMins,2)
+    print "Done printing duplicate free file and duplicate list"
+    print "Running time: " + str(TimeTakenInMins) + " minutes, " + str(TimeTakenInSecs) + " seconds"
+    StartingTime = time.time()
+
+#########
+              
+    # END PRE-PROCESSING PHASE
+    # SCRIPT WILL CONTINUE TO DETERMINE TOTAL
+    # NUMBER OF MATCHES
+    
+    # TO RUN THE NEXT PART SEPARATELY, COMMENT OUT THE ABOVE
+    # AND PUT THE RESULT PRINTED OUT FOR dup_matches HERE:
+                
+    tot = dup_matches # new variable to count total matches starting
+                      # with the total coming from duplicated lines
+        
+    nodupes_read = open("sentnodupes.txt", "r")
+    
+    # compute duplicate free word list and store sentence words
+    
+    Sentence_List = []
+    s = nodupes_read.readline()
+
+    while not (s == ""):
+        s_words = (s[:-1]).split()
+        if len(s_words) >= 10:
+            Sentence_List.append(s_words)
+        s = nodupes_read.readline()
+
+    NumberOfSentences = len(Sentence_List)
+    
+    File.close()    
+    
+    Sentence_List.sort(key=len)
+    
+#########
+    
+    TimeTaken = time.time() - StartingTime
+    TimeTakenInMins = floor(TimeTaken/60)
+    TimeTakenInSecs = round(TimeTaken - 60 * TimeTakenInMins,2)
+    print "Done reading duplicate free list and sorting by number of words"
+    print "Running time: " + str(TimeTakenInMins) + " minutes, " + str(TimeTakenInSecs) + " seconds"
+    StartingTime = time.time()
+    
+#########
+
+    h1o = defaultdict(list) # for odd sentence word length
+    h2o = defaultdict(list)
+    
+    h1e = defaultdict(list) # for even sentence word length
+    h2e = defaultdict(list)
+    
+    h1 = [h1e,h1o]    # two dictionaries to store first 5
+    h2 = [h2e,h2o]    # and last 5 words as keys, with lists
+                      # of sentence numbers as values
+                   
+    match1 = set()    # to store the list of values
+                      # as tuples (index 1, index 2, weight)
+                      # where weight is the product of the number
+                      # of duplicates of the two sentences
+    
+    p = 12
+    i = 0
+    while(True):
+        if (i == NumberOfSentences or len(Sentence_List[i]) > p):
+            # get all pairs of length p
+            for k in h1[p%2].keys():
+                for m in xrange(len(h1[p%2][k])):
+                    ind1 = h1[p%2][k][m]
+                    for n in xrange(m+1,len(h1[p%2][k])):
+                        ind2 = h1[p%2][k][n]
+                        if editDistance1(Sentence_List[ind1][1:-1],Sentence_List[ind2][1:-1]):
+                            mult = int(Sentence_List[ind1][-1]) * int(Sentence_List[ind2][-1])
+                            if ind1 < ind2:
+                                match1.add((ind2,ind1, mult))
+                            else:
+                                match1.add((ind2,ind1, mult))
+            for k in h2[p%2].keys():
+                for m in xrange(len(h2[p%2][k])):
+                    ind1 = h2[p%2][k][m]
+                    for n in xrange(m+1,len(h2[p%2][k])):
+                        ind2 = h2[p%2][k][n]
+                        if editDistance1(Sentence_List[ind1][1:-1],Sentence_List[ind2][1:-1]):
+                            mult = int(Sentence_List[ind1][-1]) * int(Sentence_List[ind2][-1])
+                            if ind1 < ind2:
+                                match1.add((ind2,ind1, mult))
+                            else:
+                                match1.add((ind2,ind1, mult))
+            tmp = 0
+            for m in match1:
+                tmp += m[2]
+            tot += tmp
+            del match1
+            match1 = set()
+            
+            # get editDistance1 pairs 
+            for k in h1[p%2].keys():
+                if h1[(p+1)%2].get(k,-1) != -1:
+                    for m in xrange(len(h1[p%2][k])):
+                        ind1 = h1[p%2][k][m]
+                        for n in xrange(len(h1[(p+1)%2][k])):
+                            ind2 = h1[(p+1)%2][k][n]
+                            if editDistance1(Sentence_List[ind1][1:-1],Sentence_List[ind2][1:-1]):
+                                mult = int(Sentence_List[ind1][-1]) * int(Sentence_List[ind2][-1])
+                                if ind1 < ind2:
+                                    match1.add((ind2,ind1,mult))
+                                else:
+                                    match1.add((ind2,ind1,mult))
+            for k in h2[p%2].keys():
+                if h2[(p+1)%2].get(k,-1) != -1:
+                    for m in xrange(len(h2[p%2][k])):
+                        ind1 = h2[p%2][k][m]
+                        for n in xrange(len(h2[(p+1)%2][k])):
+                            ind2 = h2[(p+1)%2][k][n]
+                            if editDistance1(Sentence_List[ind1][1:-1],Sentence_List[ind2][1:-1]):
+                                mult = int(Sentence_List[ind1][-1]) * int(Sentence_List[ind2][-1])
+                                if ind1 < ind2:
+                                    match1.add((ind2,ind1,mult))
+                                else:
+                                    match1.add((ind2,ind1,mult))
+            tmp = 0
+            for m in match1:
+                tmp += m[2]
+            tot += tmp
+            del match1
+            match1 = set()
+            
+            h1[(p+1)%2] = defaultdict(list)
+            h2[(p+1)%2] = defaultdict(list)
+            p += 1
+            if i == NumberOfSentences:
+                break      
+        else:
+            # add the sentence to the dictionaries
+            cur_list = Sentence_List[i]
+            cur_str = ' '.join(cur_list[1:6])
+            h1[p%2][cur_str].append(i)
+            cur_str = ' '.join(cur_list[-6:-1])
+            h2[p%2][cur_str].append(i)
+            i += 1            
+        
+
+    
+    TimeTaken = time.time() - StartingTime
+    TimeTakenInMins = floor(TimeTaken/60)
+    TimeTakenInSecs = round(TimeTaken - 60 * TimeTakenInMins,2)
+    print "Done counting: " + str(tot) + " matches!"
+    print "Running time: " + str(TimeTakenInMins) + " minutes, " + str(TimeTakenInSecs) + " seconds"
+    StartingTime = time.time()
+	
+	
+def editDistance1(s1,s2):
     l1 = len(s1)
     l2 = len(s2)
     if l1 == l2:
@@ -45,233 +265,8 @@ def edit1(s1,s2):
         return True
     else:
         return False
+    
 
-def main():
-
-    start_time = time.time()
-    
-    sent_file = open(input_file, "r")
-    
-    # compute word list and store sentence words
-    
-    s_list = []
-    s = sent_file.readline()
-
-    while not (s == ""):
-        s_words = (s[:-1]).split()
-        if len(s_words) >= 10:
-            s_list.append(s_words)
-        s = sent_file.readline()
-
-    n_sent = len(s_list)
-    
-    sent_file.close()   
-
-#########
-    
-    run_time = time.time() - start_time
-    run_min = floor(run_time/60)
-    run_sec = round(run_time - 60 * run_min,2)
-    print "Done constructing word list"
-    print "Running time: " + str(run_min) + " minutes, " + str(run_sec) + " seconds"
-    start_time = time.time()
-    
-#########
-    
-    # Remove duplicates and write output files
-    
-    s_list.sort(key=lambda s: s[1:]) # sort by the sentence
-                                     # ignoring the line number
-                                     # printed in the file
-    
-    nodupes = open("F:\\DM\\1MBisentnodupes.txt", "w")
-    dupelist = open("F:\\DM\\1MBisentdupelist.txt", "w")
-    
-    k = 0
-    dup_matches = 0
-    dup_count = 1
-    tmp_list = []
-    for k in xrange(n_sent):
-        if k == n_sent - 1 or s_list[k][1:] != s_list[k+1][1:]:
-            # output unique sentences, with the number of duplicates of
-            # that sentence appended to the end
-            nodupes.write(" ".join(s_list[k]) + " " + str(dup_count) + "\n")
-            if dup_count > 1:
-                # count matches due to duplicates
-                dup_matches += (dup_count * (dup_count - 1))/2
-                # write duplicates to file in case they're needed later
-                dupelist.write(s_list[k][0] + " " + " ".join(tmp_list) + "\n")
-                dup_count = 1
-                tmp_list = []
-        else:
-            dup_count += 1
-            tmp_list.append(s_list[k][0])
-    
-    print 
-    
-    nodupes.close()
-    dupelist.close()
-    
-    del s_list
-    
-    print "Total matches due to duplicates: " + str(dup_matches)
-    
-#########
-    
-    run_time = time.time() - start_time
-    run_min = floor(run_time/60)
-    run_sec = round(run_time - 60 * run_min,2)
-    print "Done printing duplicate free file and duplicate list"
-    print "Running time: " + str(run_min) + " minutes, " + str(run_sec) + " seconds"
-    start_time = time.time()
-
-#########
-              
-    # END PRE-PROCESSING PHASE
-    # SCRIPT WILL CONTINUE TO DETERMINE TOTAL
-    # NUMBER OF MATCHES
-    
-    # TO RUN THE NEXT PART SEPARATELY, COMMENT OUT THE ABOVE
-    # AND PUT THE RESULT PRINTED OUT FOR dup_matches HERE:
-                
-    tot = dup_matches # new variable to count total matches starting
-                      # with the total coming from duplicated lines
-        
-    nodupes_read = open("sentnodupes.txt", "r")
-    
-    # compute duplicate free word list and store sentence words
-    
-    s_list = []
-    s = nodupes_read.readline()
-
-    while not (s == ""):
-        s_words = (s[:-1]).split()
-        if len(s_words) >= 10:
-            s_list.append(s_words)
-        s = nodupes_read.readline()
-
-    n_sent = len(s_list)
-    
-    sent_file.close()    
-    
-    s_list.sort(key=len)
-    
-#########
-    
-    run_time = time.time() - start_time
-    run_min = floor(run_time/60)
-    run_sec = round(run_time - 60 * run_min,2)
-    print "Done reading duplicate free list and sorting by number of words"
-    print "Running time: " + str(run_min) + " minutes, " + str(run_sec) + " seconds"
-    start_time = time.time()
-    
-#########
-
-    h1o = defaultdict(list) # for odd sentence word length
-    h2o = defaultdict(list)
-    
-    h1e = defaultdict(list) # for even sentence word length
-    h2e = defaultdict(list)
-    
-    h1 = [h1e,h1o]    # two dictionaries to store first 5
-    h2 = [h2e,h2o]    # and last 5 words as keys, with lists
-                      # of sentence numbers as values
-                   
-    match1 = set()    # to store the list of values
-                      # as tuples (index 1, index 2, weight)
-                      # where weight is the product of the number
-                      # of duplicates of the two sentences
-    
-    p = 12
-    i = 0
-    while(True):
-        if (i == n_sent or len(s_list[i]) > p):
-            # get all pairs of length p
-            for k in h1[p%2].keys():
-                for m in xrange(len(h1[p%2][k])):
-                    ind1 = h1[p%2][k][m]
-                    for n in xrange(m+1,len(h1[p%2][k])):
-                        ind2 = h1[p%2][k][n]
-                        if edit1(s_list[ind1][1:-1],s_list[ind2][1:-1]):
-                            mult = int(s_list[ind1][-1]) * int(s_list[ind2][-1])
-                            if ind1 < ind2:
-                                match1.add((ind2,ind1, mult))
-                            else:
-                                match1.add((ind2,ind1, mult))
-            for k in h2[p%2].keys():
-                for m in xrange(len(h2[p%2][k])):
-                    ind1 = h2[p%2][k][m]
-                    for n in xrange(m+1,len(h2[p%2][k])):
-                        ind2 = h2[p%2][k][n]
-                        if edit1(s_list[ind1][1:-1],s_list[ind2][1:-1]):
-                            mult = int(s_list[ind1][-1]) * int(s_list[ind2][-1])
-                            if ind1 < ind2:
-                                match1.add((ind2,ind1, mult))
-                            else:
-                                match1.add((ind2,ind1, mult))
-            tmp = 0
-            for m in match1:
-                tmp += m[2]
-            tot += tmp
-            del match1
-            match1 = set()
-            
-            # get all pairs of length p & p-1
-            for k in h1[p%2].keys():
-                if h1[(p+1)%2].get(k,-1) != -1:
-                    for m in xrange(len(h1[p%2][k])):
-                        ind1 = h1[p%2][k][m]
-                        for n in xrange(len(h1[(p+1)%2][k])):
-                            ind2 = h1[(p+1)%2][k][n]
-                            if edit1(s_list[ind1][1:-1],s_list[ind2][1:-1]):
-                                mult = int(s_list[ind1][-1]) * int(s_list[ind2][-1])
-                                if ind1 < ind2:
-                                    match1.add((ind2,ind1,mult))
-                                else:
-                                    match1.add((ind2,ind1,mult))
-            for k in h2[p%2].keys():
-                if h2[(p+1)%2].get(k,-1) != -1:
-                    for m in xrange(len(h2[p%2][k])):
-                        ind1 = h2[p%2][k][m]
-                        for n in xrange(len(h2[(p+1)%2][k])):
-                            ind2 = h2[(p+1)%2][k][n]
-                            if edit1(s_list[ind1][1:-1],s_list[ind2][1:-1]):
-                                mult = int(s_list[ind1][-1]) * int(s_list[ind2][-1])
-                                if ind1 < ind2:
-                                    match1.add((ind2,ind1,mult))
-                                else:
-                                    match1.add((ind2,ind1,mult))
-            tmp = 0
-            for m in match1:
-                tmp += m[2]
-            tot += tmp
-            del match1
-            match1 = set()
-            
-            h1[(p+1)%2] = defaultdict(list)
-            h2[(p+1)%2] = defaultdict(list)
-            p += 1
-            if i == n_sent:
-                break      
-        else:
-            # add the sentence to the dictionaries
-            cur_list = s_list[i]
-            cur_str = ' '.join(cur_list[1:6])
-            h1[p%2][cur_str].append(i)
-            cur_str = ' '.join(cur_list[-6:-1])
-            h2[p%2][cur_str].append(i)
-            i += 1            
-        
-#########
-    
-    run_time = time.time() - start_time
-    run_min = floor(run_time/60)
-    run_sec = round(run_time - 60 * run_min,2)
-    print "Done counting: " + str(tot) + " matches!"
-    print "Running time: " + str(run_min) + " minutes, " + str(run_sec) + " seconds"
-    start_time = time.time()
-    
-#########
 
 if __name__ == "__main__":
     main()
